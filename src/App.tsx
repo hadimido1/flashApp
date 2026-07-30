@@ -12,32 +12,59 @@ export default function App() {
   const [stream, setStream] = useState<MediaStream | null>(null);
 
   useEffect(() => {
+    const savedState = localStorage.getItem('flashlight_state');
+    if (savedState === 'on') {
+      setIsOn(true);
+      // Add a slight delay to allow the browser to initialize before requesting camera
+      setTimeout(() => {
+        toggleTorchHardware(true);
+      }, 300);
+    }
+
+    const savedExitCount = localStorage.getItem('flashlight_exit_count');
+    if (savedExitCount) {
+      setExitCount(parseInt(savedExitCount, 10));
+    }
+
     const handlePopState = (event: PopStateEvent) => {
       window.history.pushState(null, '', window.location.href);
       setShowExitModal(true);
     };
 
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const isCurrentlyOn = localStorage.getItem('flashlight_state') === 'on';
+      if (isCurrentlyOn) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
     window.history.pushState(null, '', window.location.href);
     window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);
 
   const handleExitConfirm = () => {
-    if (exitCount < 100) {
-      setExitCount(prev => prev + 1);
+    if (exitCount < 200) {
+      const newCount = exitCount + 1;
+      setExitCount(newCount);
+      localStorage.setItem('flashlight_exit_count', newCount.toString());
     } else {
       setShowExitModal(false);
       setShowPaywall(true);
       setExitCount(0);
+      localStorage.setItem('flashlight_exit_count', '0');
     }
   };
 
   const handleExitCancel = () => {
     setShowExitModal(false);
-    setExitCount(0);
   };
 
   const toggleTorchHardware = async (enable: boolean) => {
@@ -65,6 +92,7 @@ export default function App() {
   const handlePowerClick = () => {
     if (!isOn) {
       setIsOn(true);
+      localStorage.setItem('flashlight_state', 'on');
       toggleTorchHardware(true);
     } else {
       setShowPaywall(true);
@@ -205,7 +233,7 @@ export default function App() {
               <p className="text-zinc-400 text-sm mb-6">
                 {exitCount === 0 
                   ? "هل أنت متأكد أنك تريد الخروج من التطبيق وإطفاء الكشاف؟" 
-                  : `يرجى التأكيد مرة أخرى للخروج. (التبقي: ${100 - exitCount})`}
+                  : `يرجى التأكيد مرة أخرى للخروج. (التبقي: ${200 - exitCount})`}
               </p>
 
               <div className="space-y-3">
