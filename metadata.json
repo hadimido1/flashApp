@@ -1,0 +1,10 @@
+{
+  "name": "كشاف بلس",
+  "description": "أفضل تطبيق كشاف لإضاءة قوية جداً ومستقرة.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
