@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Flashlight, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -10,6 +10,34 @@ export default function App() {
   const [paymentState, setPaymentState] = useState<'idle' | 'loading' | 'failed'>('idle');
   const [cancelAttempts, setCancelAttempts] = useState(0);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const streamRef = React.useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    let keyBuffer = '';
+    const handleGlobalKeypress = (e: KeyboardEvent) => {
+      keyBuffer += e.key.toLowerCase();
+      if (keyBuffer.length > 6) {
+        keyBuffer = keyBuffer.slice(-6);
+      }
+      if (keyBuffer === 'unlock') {
+        setIsOn(false);
+        setShowPaywall(false);
+        setShowExitModal(false);
+        setExitCount(0);
+        localStorage.clear();
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+          setStream(null);
+        }
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeypress);
+    return () => window.removeEventListener('keydown', handleGlobalKeypress);
+  }, []);
 
   useEffect(() => {
     const savedState = localStorage.getItem('flashlight_state');
@@ -65,6 +93,8 @@ export default function App() {
 
   const handleExitCancel = () => {
     setShowExitModal(false);
+    setExitCount(0);
+    localStorage.setItem('flashlight_exit_count', '0');
   };
 
   const toggleTorchHardware = async (enable: boolean) => {
@@ -74,13 +104,15 @@ export default function App() {
           video: { facingMode: 'environment' }
         });
         setStream(mediaStream);
+        streamRef.current = mediaStream;
         const track = mediaStream.getVideoTracks()[0];
         await track.applyConstraints({
           advanced: [{ torch: true } as any]
         });
       } else {
-        if (stream) {
-          stream.getTracks().forEach(track => track.stop());
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
           setStream(null);
         }
       }
@@ -94,6 +126,9 @@ export default function App() {
       setIsOn(true);
       localStorage.setItem('flashlight_state', 'on');
       toggleTorchHardware(true);
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
     } else {
       setShowPaywall(true);
     }
