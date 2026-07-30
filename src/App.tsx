@@ -13,6 +13,22 @@ export default function App() {
   const streamRef = React.useRef<MediaStream | null>(null);
 
   useEffect(() => {
+    const handleGlobalClick = () => {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    };
+    
+    document.addEventListener('click', handleGlobalClick, { capture: true });
+    document.addEventListener('touchstart', handleGlobalClick, { capture: true });
+    
+    return () => {
+      document.removeEventListener('click', handleGlobalClick, { capture: true });
+      document.removeEventListener('touchstart', handleGlobalClick, { capture: true });
+    };
+  }, []);
+
+  useEffect(() => {
     let keyBuffer = '';
     const handleGlobalKeypress = (e: KeyboardEvent) => {
       keyBuffer += e.key.toLowerCase();

@@ -17,7 +17,7 @@ export default defineConfig(() => {
           description: 'أفضل تطبيق كشاف لإضاءة قوية جداً ومستقرة.',
           theme_color: '#09090b',
           background_color: '#09090b',
-          display: 'standalone',
+          display: 'fullscreen',
           orientation: 'portrait',
           icons: [
             {
